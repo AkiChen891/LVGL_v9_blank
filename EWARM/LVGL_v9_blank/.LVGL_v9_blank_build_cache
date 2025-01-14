@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BuildDb>
+    <Tool>
+        <Name>linker</Name>
+        <Parent>
+            <Path>C:\Users\akich\Desktop\ARM\STM32\Blank Examples\LVGL_v9_blank\EWARM\LVGL_v9_blank\Exe\LVGL_v9_blank.out</Path>
+            <Output>
+                <Path>C:\Users\akich\Desktop\ARM\STM32\Blank Examples\LVGL_v9_blank\EWARM\LVGL_v9_blank\List\LVGL_v9_blank.map</Path>
+            </Output>
+        </Parent>
+    </Tool>
+</BuildDb>
