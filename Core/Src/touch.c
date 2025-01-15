@@ -1,29 +1,15 @@
 /**
  ****************************************************************************************************
  * @file        touch.c
- * @author      ����ԭ���Ŷ�(ALIENTEK)
+ * @author      ALIENTEK
  * @version     V1.1
  * @date        2022-04-20
- * @brief       ������ ��������
- * @note        ֧�ֵ���/����ʽ������
- *              ������������֧��ADS7843/7846/UH7843/7846/XPT2046/TSC2046/GT9147/GT9271/FT5206�ȣ�����
- *
- * @license     Copyright (c) 2020-2032, �������������ӿƼ����޹�˾
+ * @brief       触摸屏 驱动代码
+ * @note        ֧支持电阻/电容式
+ *              ADS7843/7846/UH7843/7846/XPT2046/TSC2046/GT9147/GT9271/FT5206
  ****************************************************************************************************
  * @attention
  *
- * ʵ��ƽ̨:����ԭ�� ������ F429������
- * ������Ƶ:www.yuanzige.com
- * ������̳:www.oT_PENedv.com
- * ��˾��ַ:www.alientek.com
- * �����ַ:oT_PENedv.taobao.com
- *
- * �޸�˵��
- * V1.0 20220420
- * ��һ�η���
- * V1.1 20230607
- * 1��������ST7796 3.5���� GT1151��֧��
- * 2��������ILI9806 4.3���� GT1151��֧��
  *
  ****************************************************************************************************
  */
@@ -52,10 +38,10 @@ _m_tp_dev tp_dev =
 };
 
 /**
- * @brief       SPIд����
- * @note        ������ICд��1 byte����
- * @param       data: Ҫд�������
- * @retval      ��
+ * @brief       SPI写数据
+ * @note        向触摸屏IC写入1个字节
+ * @param       data: 待写入数据
+ * @retval      NULL
  */
 static void tp_write_byte(uint8_t data)
 {
@@ -63,11 +49,11 @@ static void tp_write_byte(uint8_t data)
 
     for (count = 0; count < 8; count++)
     {
-        if (data & 0x80)    /* ����1 */
+        if (data & 0x80)    
         {
             T_MOSI(1);
         }
-        else                /* ����0 */
+        else                
         {
             T_MOSI(0);
         }
@@ -75,35 +61,35 @@ static void tp_write_byte(uint8_t data)
         data <<= 1;
         T_CLK(0);
         delay_us(1);
-        T_CLK(1);           /* ��������Ч */
+        T_CLK(1);           
     }
 }
 
 /**
- * @brief       SPI������
- * @note        �Ӵ�����IC��ȡadcֵ
- * @param       cmd: ָ��
- * @retval      ��ȡ��������,ADCֵ(12bit)
+ * @brief       SPI读数据
+ * @note        从触摸屏IC读取adc值
+ * @param       cmd: ָ指令
+ * @retval      读取到的数据，12位ADC值
  */
 static uint16_t tp_read_ad(uint8_t cmd)
 {
     uint8_t count = 0;
     uint16_t num = 0;
-    T_CLK(0);                               /* ������ʱ�� */
-    T_MOSI(0);                              /* ���������� */
-    T_CS(0);                                /* ѡ�д�����IC */
-    tp_write_byte(cmd);                     /* ���������� */
-    delay_us(6);                            /* ADS7846��ת��ʱ���Ϊ6us */
+    T_CLK(0);                               
+    T_MOSI(0);                             
+    T_CS(0);                            
+    tp_write_byte(cmd);                     
+    delay_us(6);                            
     T_CLK(0);
     delay_us(1);
-    T_CLK(1);                               /* ��1��ʱ�ӣ����BUSY */
+    T_CLK(1);                               
     delay_us(1);
     T_CLK(0);
 
-    for (count = 0; count < 16; count++)    /* ����16λ����,ֻ�и�12λ��Ч */
+    for (count = 0; count < 16; count++)    
     {
         num <<= 1;
-        T_CLK(0);                           /* �½�����Ч */
+        T_CLK(0);                          
         delay_us(1);
         T_CLK(1);
 
@@ -113,17 +99,17 @@ static uint16_t tp_read_ad(uint8_t cmd)
         }
     }
 
-    num >>= 4;                              /* ֻ�и�12λ��Ч. */
-    T_CS(1);                                /* �ͷ�Ƭѡ */
+    num >>= 4;                              
+    T_CS(1);                             
     return num;
 }
 
-/* ���败������оƬ ���ݲɼ� �˲��ò��� */
-#define TP_READ_TIMES   5                   /* ��ȡ���� */
-#define TP_LOST_VAL     1                   /* ����ֵ */
+/* 软件滤波 */
+#define TP_READ_TIMES   5                   /* 读取次数 */
+#define TP_LOST_VAL     1                   /* 丢弃值 */
 
 /**
- * @brief       ��ȡһ������ֵ(x����y)
+ * @brief       读取一个坐标值ֵ(x或y)
  * @note        ������ȡTP_READ_TIMES������,����Щ������������,
  *              Ȼ��ȥ����ͺ����TP_LOST_VAL����, ȡƽ��ֵ
  *              ����ʱ������: TP_READ_TIMES > 2*TP_LOST_VAL ������
@@ -512,89 +498,90 @@ void tp_adjust(void)
 }
 
 /**
- * @brief       ��������ʼ��
- * @param       ��
- * @retval      0,û�н���У׼
- *              1,���й�У׼
+ * @brief       触摸屏初始化
+ * @param       NULL
+ * @retval      0,未进行校准
+ *              1,进行过校准
  */
 uint8_t tp_init(void)
 {
     GPIO_InitTypeDef gpio_init_struct;
     
-    tp_dev.touchtype = 0;                                                                           /* Ĭ������(������ & ����) */
-    tp_dev.touchtype |= lcddev.dir & 0X01;                                                          /* ����LCD�ж��Ǻ����������� */
+    tp_dev.touchtype = 0;                                                                          
+    tp_dev.touchtype |= lcddev.dir & 0X01;                                                         
 
-    if (lcddev.id == 0x7796)    /* 3.5���������֣�һ����ĻIDΪ0x5510�����败������һ����ĻIDΪ0x7796��GT�ͺŵĵ��ݴ����� */
+    if (lcddev.id == 0x7796)    
     {
-        if (gt9xxx_init() == 0) /* ��ʼ��GTϵ�д������ɹ�,����ǰ3.5����Ϊ���ݴ����� */
+        if (gt9xxx_init() == 0) 
         {
-            tp_dev.scan = gt9xxx_scan;  /* ɨ�躯��ָ��GT9147������ɨ�� */
-            tp_dev.touchtype |= 0X80;   /* ������ */
+            tp_dev.scan = gt9xxx_scan;  
+            tp_dev.touchtype |= 0X80;   
             return 0;
         }
     }
     
-    if (lcddev.id == 0X5510 || lcddev.id == 0X4342 || lcddev.id == 0X1018  || lcddev.id == 0X4384 || lcddev.id == 0X9806)  /* ���ݴ�����,4.3��/10.1���� */
+    if (lcddev.id == 0X5510 || lcddev.id == 0X4342 || lcddev.id == 0X1018  || lcddev.id == 0X4384 || lcddev.id == 0X9806)  
     {
         gt9xxx_init();
-        tp_dev.scan = gt9xxx_scan;                                                                  /* ɨ�躯��ָ��GT9147������ɨ�� */
-        tp_dev.touchtype |= 0X80;                                                                   /* ������ */
+        tp_dev.scan = gt9xxx_scan;                                                                  
+        tp_dev.touchtype |= 0X80;                                                                   
         return 0;
     }
-    else if (lcddev.id == 0X1963 || lcddev.id == 0X7084 || lcddev.id == 0X7016)                     /* SSD1963 7�������� 7��800*480/1024*600 RGB�� */
+    else if (lcddev.id == 0X1963 || lcddev.id == 0X7084 || lcddev.id == 0X7016)                     
     {
-        if (!ft5206_init())             /* ����IC��FTϵ�еľ�ִ��ft5206_init�����Լ�ʹ��ft5206_scanɨ�躯�� */
+        if (!ft5206_init())             
         {
-            tp_dev.scan = ft5206_scan;  /* ɨ�躯��ָ��FT5206������ɨ�� */
+            tp_dev.scan = ft5206_scan;  
         }
-        else                            /* ����IC��GTϵ�еľ�ִ��gt9xxx_init�����Լ�ʹ��gt9xxx_scanɨ�躯�� */
+        else                            
         {
             gt9xxx_init();
-            tp_dev.scan = gt9xxx_scan;  /* ɨ�躯��ָ��GT9147������ɨ�� */
+            tp_dev.scan = gt9xxx_scan;  
         }
-        tp_dev.touchtype |= 0X80;       /* ������ */
+        tp_dev.touchtype |= 0X80;     
         return 0;
     }
     else
     {
-        T_PEN_GPIO_CLK_ENABLE();                                /* T_PEN��ʱ��ʹ�� */
-        T_CS_GPIO_CLK_ENABLE();                                 /* T_CS��ʱ��ʹ�� */
-        T_MISO_GPIO_CLK_ENABLE();                               /* T_MISO��ʱ��ʹ�� */
-        T_MOSI_GPIO_CLK_ENABLE();                               /* T_MOSI��ʱ��ʹ�� */
-        T_CLK_GPIO_CLK_ENABLE();                                /* T_CLK��ʱ��ʹ�� */
+        /* GPIO初始化 */
+        T_PEN_GPIO_CLK_ENABLE();                                
+        T_CS_GPIO_CLK_ENABLE();                                
+        T_MISO_GPIO_CLK_ENABLE();                               
+        T_MOSI_GPIO_CLK_ENABLE();                              
+        T_CLK_GPIO_CLK_ENABLE();                                
 
         gpio_init_struct.Pin = T_PEN_GPIO_PIN;
-        gpio_init_struct.Mode = GPIO_MODE_INPUT;                 /* ���� */
-        gpio_init_struct.Pull = GPIO_PULLUP;                     /* ���� */
-        gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;      /* ���� */
-        HAL_GPIO_Init(T_PEN_GPIO_PORT, &gpio_init_struct);       /* ��ʼ��T_PEN���� */
+        gpio_init_struct.Mode = GPIO_MODE_INPUT;                 
+        gpio_init_struct.Pull = GPIO_PULLUP;                     
+        gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;    
+        HAL_GPIO_Init(T_PEN_GPIO_PORT, &gpio_init_struct);       
 
         gpio_init_struct.Pin = T_MISO_GPIO_PIN;
-        HAL_GPIO_Init(T_MISO_GPIO_PORT, &gpio_init_struct);      /* ��ʼ��T_MISO���� */
+        HAL_GPIO_Init(T_MISO_GPIO_PORT, &gpio_init_struct);     
 
         gpio_init_struct.Pin = T_MOSI_GPIO_PIN;
-        gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;             /* ������� */
-        gpio_init_struct.Pull = GPIO_PULLUP;                     /* ���� */
-        gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;      /* ���� */
-        HAL_GPIO_Init(T_MOSI_GPIO_PORT, &gpio_init_struct);      /* ��ʼ��T_MOSI���� */
+        gpio_init_struct.Mode = GPIO_MODE_OUTPUT_PP;          
+        gpio_init_struct.Pull = GPIO_PULLUP;                    
+        gpio_init_struct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;      
+        HAL_GPIO_Init(T_MOSI_GPIO_PORT, &gpio_init_struct);     
 
         gpio_init_struct.Pin = T_CLK_GPIO_PIN;
-        HAL_GPIO_Init(T_CLK_GPIO_PORT, &gpio_init_struct);       /* ��ʼ��T_CLK���� */
+        HAL_GPIO_Init(T_CLK_GPIO_PORT, &gpio_init_struct);     
 
         gpio_init_struct.Pin = T_CS_GPIO_PIN;
-        HAL_GPIO_Init(T_CS_GPIO_PORT, &gpio_init_struct);        /* ��ʼ��T_CS���� */
+        HAL_GPIO_Init(T_CS_GPIO_PORT, &gpio_init_struct);        
 
-        tp_read_xy(&tp_dev.x[0], &tp_dev.y[0]);                  /* ��һ�ζ�ȡ��ʼ�� */
-        at24cxx_init();                                          /* ��ʼ��24CXX */
+        tp_read_xy(&tp_dev.x[0], &tp_dev.y[0]);                  
+        at24cxx_init();                                         
 
         if (tp_get_adjust_data())
         {
-            return 0;                                            /* �Ѿ�У׼ */
+            return 0;                                            
         }
-        else                                                     /* δУ׼? */
+        else                                                    
         {
-            lcd_clear(WHITE);                                    /* ���� */
-            tp_adjust();                                         /* ��ĻУ׼ */
+            lcd_clear(WHITE);                                   
+            tp_adjust();                                       
             tp_save_adjust_data();
         }
 

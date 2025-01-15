@@ -1563,6 +1563,9 @@
                 <name>$PROJ_DIR$\..\lvgls\lvgl\src\font\lv_font_simsun_16_cjk.c</name>
             </file>
             <file>
+                <name>$PROJ_DIR$\..\lvgls\lvgl\src\font\lv_font_SiYuanHeiTi_Bold_32.c</name>
+            </file>
+            <file>
                 <name>$PROJ_DIR$\..\lvgls\lvgl\src\font\lv_font_unscii_16.c</name>
             </file>
             <file>
